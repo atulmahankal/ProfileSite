@@ -294,54 +294,6 @@ function ExperienceSection() {
           </div>
         )}
 
-        <div className="mt-16 bg-gray-800 rounded-lg p-8 border border-gray-700">
-          <h3 className="text-2xl font-bold text-white mb-4">📋 Google Spreadsheet Setup</h3>
-          <p className="text-gray-300 mb-4">
-            To populate this page with your work experience, create a Google Spreadsheet with an "Experience" sheet containing these columns:
-          </p>
-          
-          <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
-            <h4 className="text-lg font-semibold text-white mb-3">Experience Sheet Columns:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <strong className="text-blue-400">From</strong>
-                <p className="text-gray-400">Start date (YYYY-MM format)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Upto</strong>
-                <p className="text-gray-400">End date or "Present" (YYYY-MM format)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Company</strong>
-                <p className="text-gray-400">Company or organization name</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Location</strong>
-                <p className="text-gray-400">Work location (City, Country)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Mode</strong>
-                <p className="text-gray-400">Work mode (Remote, On-site, Hybrid)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Designation</strong>
-                <p className="text-gray-400">Job title or position</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Tech Stack</strong>
-                <p className="text-gray-400">Comma-separated technologies used (e.g., React, Node.js, PostgreSQL)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">WorkDescriptions</strong>
-                <p className="text-gray-400">Detailed description of responsibilities and achievements</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-gray-400 mt-4 text-sm">
-            💡 <strong>Tip:</strong> Update the spreadsheet URL in <code className="bg-gray-700 px-2 py-1 rounded">shared/config.ts</code> to connect your sheet.
-          </p>
-        </div>
       </div>
     </section>
   );
