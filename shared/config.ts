@@ -2,8 +2,11 @@
 export const config = {
   // Google Sheets configuration
   googleSheets: {
-    // Replace this URL with your actual Google Spreadsheet URL
-    // Format: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit#gid={SHEET_ID}
+    // Replace YOUR_SPREADSHEET_ID with your actual Google Spreadsheet ID
+    // To get your spreadsheet ID:
+    // 1. Open your Google Sheet
+    // 2. Copy the ID from the URL: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
+    // 3. Replace YOUR_SPREADSHEET_ID below with your actual ID
     baseUrl: "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID",
     
     // Sheet names for different pages

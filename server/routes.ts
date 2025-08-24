@@ -222,8 +222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import config to get the spreadsheet URL
       const config = (await import("../shared/config")).default;
       
-      // Construct the CSV export URL for Photography Albums sheet
-      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Albums";
+      // Construct the CSV export URL for Photography sheet
+      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.photography}`;
       
       const response = await fetch(sheetUrl, {
         headers: {
@@ -241,7 +241,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = csvText.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
       
-      const albums = lines.slice(1).map((line, index) => {
+      // Group photos by title to create albums
+      const photosByTitle = new Map();
+      
+      lines.slice(1).forEach((line, index) => {
         // Handle CSV parsing with proper quote handling
         const values = [];
         let current = '';
@@ -265,14 +268,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Remove quotes from values
         const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
         
-        return {
-          id: `album-${index + 1}`,
-          title: cleanValues[0] || '',
-          description: cleanValues[1] || null,
-          category: cleanValues[2] || 'General',
-          dateCreated: cleanValues[3] || null,
-        };
-      }).filter(album => album.title); // Filter out empty rows
+        const title = cleanValues[0] || '';
+        const description = cleanValues[1] || '';
+        const gphotosKey = cleanValues[2] || '';
+        
+        if (title && gphotosKey) {
+          if (!photosByTitle.has(title)) {
+            photosByTitle.set(title, {
+              title,
+              description,
+              photos: []
+            });
+          }
+          
+          // Convert Google Photos key to viewable URL
+          const imageUrl = gphotosKey.includes('http') ? gphotosKey : `https://lh3.googleusercontent.com/${gphotosKey}`;
+          
+          photosByTitle.get(title).photos.push({
+            id: `photo-${index + 1}`,
+            title: title,
+            description: description,
+            imageUrl: imageUrl,
+            thumbnailUrl: imageUrl,
+            orderIndex: photosByTitle.get(title).photos.length
+          });
+        }
+      });
+      
+      // Convert to albums array
+      const albums = Array.from(photosByTitle.entries()).map(([title, data], index) => ({
+        id: `album-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        title: data.title,
+        description: data.description,
+        category: 'Photography',
+        dateCreated: new Date().toISOString().split('T')[0],
+        photoCount: data.photos.length
+      }));
       
       res.json(albums);
     } catch (error) {
@@ -280,18 +311,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return sample data when Google Sheets is not configured
       res.json([
         {
-          id: "album-1",
-          title: "Nature Photography",
-          description: "Beautiful landscapes and wildlife photography",
-          category: "Nature",
-          dateCreated: "2024-01-15"
+          id: "album-cloudy-mountains",
+          title: "Cloudy Mountains",
+          description: "Mountains covered with Clouds",
+          category: "Photography",
+          dateCreated: "2024-01-15",
+          photoCount: 3
         },
         {
-          id: "album-2",
-          title: "Urban Exploration",
-          description: "City streets, architecture and urban life",
-          category: "Urban",
-          dateCreated: "2024-02-10"
+          id: "album-evening-sky",
+          title: "Evening Sky",
+          description: "Beautiful evening sky photography",
+          category: "Photography",
+          dateCreated: "2024-02-10",
+          photoCount: 2
         }
       ]);
     }
@@ -305,8 +338,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import config to get the spreadsheet URL
       const config = (await import("../shared/config")).default;
       
-      // Construct the CSV export URL for Photos sheet
-      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Photos";
+      // Construct the CSV export URL for Photography sheet
+      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.photography}`;
       
       const response = await fetch(sheetUrl, {
         headers: {
@@ -324,7 +357,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = csvText.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
       
-      const photos = lines.slice(1).map((line, index) => {
+      // Extract album title from albumId (remove 'album-' prefix and convert dashes back to spaces)
+      const albumTitle = albumId.replace('album-', '').replace(/-/g, ' ');
+      
+      const photos: any[] = [];
+      
+      lines.slice(1).forEach((line, index) => {
         // Handle CSV parsing with proper quote handling
         const values = [];
         let current = '';
@@ -348,69 +386,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Remove quotes from values
         const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
         
-        return {
-          id: `photo-${index + 1}`,
-          albumId: cleanValues[0] || '',
-          title: cleanValues[1] || null,
-          description: cleanValues[2] || null,
-          imageUrl: cleanValues[3] || '',
-          thumbnailUrl: cleanValues[4] || cleanValues[3] || '', // Use main image if no thumbnail
-          orderIndex: parseInt(cleanValues[5]) || index,
-        };
-      }).filter(photo => photo.albumId === albumId && photo.imageUrl); // Filter by album and non-empty image URLs
+        const title = cleanValues[0] || '';
+        const description = cleanValues[1] || '';
+        const gphotosKey = cleanValues[2] || '';
+        
+        // Check if this photo belongs to the requested album
+        if (title.toLowerCase() === albumTitle.toLowerCase() && gphotosKey) {
+          // Convert Google Photos key to viewable URL
+          const imageUrl = gphotosKey.includes('http') ? gphotosKey : `https://lh3.googleusercontent.com/${gphotosKey}`;
+          
+          photos.push({
+            id: `photo-${index + 1}`,
+            albumId: albumId,
+            title: title,
+            description: description,
+            imageUrl: imageUrl,
+            thumbnailUrl: imageUrl,
+            orderIndex: photos.length
+          });
+        }
+      });
       
       res.json(photos);
     } catch (error) {
       console.error('Error fetching photos:', error);
       // Return sample data when Google Sheets is not configured
       const samplePhotos = {
-        "album-1": [
+        "album-cloudy-mountains": [
           {
             id: "photo-1",
-            albumId: "album-1",
-            title: "Mountain Sunrise",
-            description: "Beautiful sunrise over the mountains",
-            imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&crop=center",
-            thumbnailUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center",
+            albumId: "album-cloudy-mountains",
+            title: "Cloudy Mountains",
+            description: "Mountains covered with Clouds",
+            imageUrl: "https://lh3.googleusercontent.com/AP1GczNXeBKelJbNLjcu77tlBUgAejFpNOcVzWv4GcK_ze-gK9-W0SimL5pW06q9LO0lVgBzMxufPr_XtSmyNnLjV07ioVNhxnDA_D0fLAKmMowuSiYKlTSE8SWF2q4Q3k6MHGAfIZf70yt0k8DLW4zOkw3MRA=w1366-h600-s-no-gm",
+            thumbnailUrl: "https://lh3.googleusercontent.com/AP1GczNXeBKelJbNLjcu77tlBUgAejFpNOcVzWv4GcK_ze-gK9-W0SimL5pW06q9LO0lVgBzMxufPr_XtSmyNnLjV07ioVNhxnDA_D0fLAKmMowuSiYKlTSE8SWF2q4Q3k6MHGAfIZf70yt0k8DLW4zOkw3MRA=w400-h300-s-no-gm",
             orderIndex: 0
-          },
-          {
-            id: "photo-2",
-            albumId: "album-1",
-            title: "Forest Path",
-            description: "A peaceful walk through the forest",
-            imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&crop=center",
-            thumbnailUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&crop=center",
-            orderIndex: 1
-          },
-          {
-            id: "photo-3",
-            albumId: "album-1",
-            title: "Lake Reflection",
-            description: "Perfect reflection on a calm lake",
-            imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&crop=center",
-            thumbnailUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center",
-            orderIndex: 2
           }
         ],
-        "album-2": [
+        "album-evening-sky": [
           {
-            id: "photo-4",
-            albumId: "album-2",
-            title: "City Lights",
-            description: "Urban nightlife and city lights",
-            imageUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop&crop=center",
-            thumbnailUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center",
+            id: "photo-2",
+            albumId: "album-evening-sky",
+            title: "Evening Sky",
+            description: "Beautiful evening sky",
+            imageUrl: "https://lh3.googleusercontent.com/AP1GczO8Gpo9Q-DxPxLRx3atB1WSdGPU3F_tB3JJZvxdXVvSNe7kPOlGjhL3s6W_GsqsZNmzGtPMMpy4CvZ0ZchgnvqqlWTcNFoooxvOOzlcjezYbUDiYkFEL6Bb8n6gc0R8r3UwRSlsScI3fQYP19geMtnCcw=w1366-h600-s-no-gm",
+            thumbnailUrl: "https://lh3.googleusercontent.com/AP1GczO8Gpo9Q-DxPxLRx3atB1WSdGPU3F_tB3JJZvxdXVvSNe7kPOlGjhL3s6W_GsqsZNmzGtPMMpy4CvZ0ZchgnvqqlWTcNFoooxvOOzlcjezYbUDiYkFEL6Bb8n6gc0R8r3UwRSlsScI3fQYP19geMtnCcw=w400-h300-s-no-gm",
             orderIndex: 0
-          },
-          {
-            id: "photo-5",
-            albumId: "album-2",
-            title: "Street Art",
-            description: "Colorful street art and urban culture",
-            imageUrl: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=800&fit=crop&crop=center",
-            thumbnailUrl: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop&crop=center",
-            orderIndex: 1
           }
         ]
       };
