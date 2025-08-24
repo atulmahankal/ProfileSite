@@ -20,7 +20,12 @@ export default function Navigation() {
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+      const navHeight = 80; // Account for navbar height
+      const elementPosition = element.offsetTop - navHeight;
+      window.scrollTo({
+        top: elementPosition,
+        behavior: "smooth"
+      });
     }
     setIsMenuOpen(false);
   };
@@ -34,7 +39,12 @@ export default function Navigation() {
         setTimeout(() => {
           const element = document.querySelector(link.href);
           if (element) {
-            element.scrollIntoView({ behavior: "smooth" });
+            const navHeight = 80; // Account for navbar height
+            const elementPosition = element.offsetTop - navHeight;
+            window.scrollTo({
+              top: elementPosition,
+              behavior: "smooth"
+            });
           }
         }, 100);
       } else {
