@@ -6,7 +6,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-portfolio-background">
       <Navigation />
-      <main className="pt-20">
+      <main className="pt-16">
         <AboutSection />
       </main>
       <Footer />

@@ -6,7 +6,7 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-portfolio-background">
       <Navigation />
-      <main className="pt-20">
+      <main className="pt-16">
         <ContactSection />
       </main>
       <Footer />
