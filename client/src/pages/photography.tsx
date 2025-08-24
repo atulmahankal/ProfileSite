@@ -1,11 +1,36 @@
 import Navigation from "@/components/navigation";
 import Footer from "@/components/footer";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, ExternalLink, Camera } from "lucide-react";
+import { CalendarDays, Camera, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { PhotoAlbum } from "@shared/schema";
+import type { PhotoAlbum, Photo } from "@shared/schema";
+
+function AlbumThumbnail({ albumId, title }: { albumId: string; title: string }) {
+  const { data: photos } = useQuery<Photo[]>({
+    queryKey: ["/api/photo-albums", albumId, "photos"],
+    queryFn: () => fetch(`/api/photo-albums/${albumId}/photos`).then(res => res.json()),
+  });
+
+  const thumbnailUrl = photos && photos.length > 0 
+    ? photos[0].thumbnailUrl || photos[0].imageUrl 
+    : "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center";
+
+  return (
+    <img
+      src={thumbnailUrl}
+      alt={title}
+      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center";
+      }}
+      data-testid={`img-thumbnail-${albumId}`}
+    />
+  );
+}
 
 function PhotographySection() {
   const { data: albums, isLoading, error } = useQuery<PhotoAlbum[]>({
@@ -67,17 +92,12 @@ function PhotographySection() {
             {albums.map((album) => (
               <Card key={album.id} className="bg-gray-800 border-gray-700 hover:border-blue-500 transition-all duration-300 group overflow-hidden" data-testid={`card-album-${album.id}`}>
                 <div className="aspect-video bg-gray-700 relative overflow-hidden">
-                  <img
-                    src={album.thumbnailUrl}
-                    alt={album.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=225&fit=crop&crop=center`;
-                    }}
-                    data-testid={`img-thumbnail-${album.id}`}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300"></div>
+                  <AlbumThumbnail albumId={album.id} title={album.title} />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                    <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Images className="h-12 w-12" />
+                    </div>
+                  </div>
                 </div>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -106,10 +126,10 @@ function PhotographySection() {
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     data-testid={`button-view-album-${album.id}`}
                   >
-                    <a href={album.albumUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Album
-                    </a>
+                    <Link href={`/photography/album/${album.id}`}>
+                      <Images className="h-4 w-4 mr-2" />
+                      View Photos
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -128,37 +148,63 @@ function PhotographySection() {
         <div className="mt-16 bg-gray-800 rounded-lg p-8 border border-gray-700">
           <h3 className="text-2xl font-bold text-white mb-4">📋 Google Spreadsheet Setup</h3>
           <p className="text-gray-300 mb-4">
-            To populate this page with your photography albums, create a Google Spreadsheet with the following columns:
+            To populate this page with your photography albums and photos, create a Google Spreadsheet with two sheets:
           </p>
-          <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
-            <h4 className="text-lg font-semibold text-white mb-3">Required Columns:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <strong className="text-blue-400">Album Title</strong>
-                <p className="text-gray-400">Name of your photo album</p>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+              <h4 className="text-lg font-semibold text-white mb-3">Sheet 1: "Albums"</h4>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <strong className="text-blue-400">Album Title</strong>
+                  <p className="text-gray-400">Name of your photo album</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Album Description</strong>
+                  <p className="text-gray-400">Brief description of the album content</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Category</strong>
+                  <p className="text-gray-400">Album category (Nature, Urban, Portrait, etc.)</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Date Created</strong>
+                  <p className="text-gray-400">Album creation date (YYYY-MM-DD format)</p>
+                </div>
               </div>
-              <div>
-                <strong className="text-blue-400">Album Description</strong>
-                <p className="text-gray-400">Brief description of the album content</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Album URL</strong>
-                <p className="text-gray-400">Google Photos shared album URL</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Thumbnail URL</strong>
-                <p className="text-gray-400">URL of the first image or album cover</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Category</strong>
-                <p className="text-gray-400">Album category (Nature, Urban, Portrait, etc.)</p>
-              </div>
-              <div>
-                <strong className="text-blue-400">Date Created</strong>
-                <p className="text-gray-400">Album creation date (YYYY-MM-DD format)</p>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+              <h4 className="text-lg font-semibold text-white mb-3">Sheet 2: "Photos"</h4>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <strong className="text-blue-400">Album ID</strong>
+                  <p className="text-gray-400">Must match the album title from Albums sheet</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Photo Title</strong>
+                  <p className="text-gray-400">Name or title of the photo (optional)</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Photo Description</strong>
+                  <p className="text-gray-400">Description of the photo (optional)</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Image URL</strong>
+                  <p className="text-gray-400">Direct link to the high-resolution image</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Thumbnail URL</strong>
+                  <p className="text-gray-400">Direct link to the thumbnail image (optional)</p>
+                </div>
+                <div>
+                  <strong className="text-blue-400">Order Index</strong>
+                  <p className="text-gray-400">Number for photo ordering (0, 1, 2, etc.)</p>
+                </div>
               </div>
             </div>
           </div>
+
           <p className="text-gray-400 mt-4 text-sm">
             💡 <strong>Tip:</strong> Update the spreadsheet URL in <code className="bg-gray-700 px-2 py-1 rounded">shared/config.ts</code> to connect your sheet.
           </p>

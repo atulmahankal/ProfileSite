@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Portfolio, type InsertPortfolio, type SocialLink, type InsertSocialLink, type Skill, type InsertSkill, type Project, type InsertProject, type PhotoAlbum, type InsertPhotoAlbum } from "@shared/schema";
+import { type User, type InsertUser, type Portfolio, type InsertPortfolio, type SocialLink, type InsertSocialLink, type Skill, type InsertSkill, type Project, type InsertProject, type PhotoAlbum, type InsertPhotoAlbum, type Photo, type InsertPhoto } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -21,6 +21,8 @@ export interface IStorage {
   
   getPhotoAlbums(): Promise<PhotoAlbum[]>;
   createPhotoAlbum(album: InsertPhotoAlbum): Promise<PhotoAlbum>;
+  getPhotosByAlbumId(albumId: string): Promise<Photo[]>;
+  createPhoto(photo: InsertPhoto): Promise<Photo>;
 }
 
 export class MemStorage implements IStorage {
@@ -30,6 +32,7 @@ export class MemStorage implements IStorage {
   private skills: Map<string, Skill>;
   private projects: Map<string, Project>;
   private photoAlbums: Map<string, PhotoAlbum>;
+  private photos: Map<string, Photo>;
 
   constructor() {
     this.users = new Map();
@@ -37,6 +40,7 @@ export class MemStorage implements IStorage {
     this.skills = new Map();
     this.projects = new Map();
     this.photoAlbums = new Map();
+    this.photos = new Map();
     
     // Initialize with Atul's portfolio data
     this.initializePortfolio();
@@ -66,7 +70,7 @@ export class MemStorage implements IStorage {
 
     socialLinksData.forEach(link => {
       const id = randomUUID();
-      this.socialLinks.set(id, { id, ...link, portfolioId: link.portfolioId || null });
+      this.socialLinks.set(id, { id, ...link, portfolioId: portfolioId });
     });
 
     // Create skills
@@ -87,7 +91,7 @@ export class MemStorage implements IStorage {
 
     skillsData.forEach(skill => {
       const id = randomUUID();
-      this.skills.set(id, { id, ...skill, portfolioId: skill.portfolioId || null });
+      this.skills.set(id, { id, ...skill, portfolioId: portfolioId });
     });
   }
 
@@ -174,6 +178,26 @@ export class MemStorage implements IStorage {
     };
     this.photoAlbums.set(id, album);
     return album;
+  }
+
+  async getPhotosByAlbumId(albumId: string): Promise<Photo[]> {
+    return Array.from(this.photos.values())
+      .filter(photo => photo.albumId === albumId)
+      .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+  }
+
+  async createPhoto(insertPhoto: InsertPhoto): Promise<Photo> {
+    const id = randomUUID();
+    const photo: Photo = { 
+      ...insertPhoto, 
+      id,
+      title: insertPhoto.title || null,
+      description: insertPhoto.description || null,
+      thumbnailUrl: insertPhoto.thumbnailUrl || null,
+      orderIndex: insertPhoto.orderIndex || 0
+    };
+    this.photos.set(id, photo);
+    return photo;
   }
 }
 

@@ -222,9 +222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import config to get the spreadsheet URL
       const config = (await import("../shared/config")).default;
       
-      // Construct the CSV export URL for Photography sheet
-      // For now using a placeholder - user needs to replace with their actual spreadsheet ID
-      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Photography";
+      // Construct the CSV export URL for Photography Albums sheet
+      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Albums";
       
       const response = await fetch(sheetUrl, {
         headers: {
@@ -270,12 +269,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: `album-${index + 1}`,
           title: cleanValues[0] || '',
           description: cleanValues[1] || null,
-          albumUrl: cleanValues[2] || '',
-          thumbnailUrl: cleanValues[3] || '',
-          category: cleanValues[4] || 'General',
-          dateCreated: cleanValues[5] || null,
+          category: cleanValues[2] || 'General',
+          dateCreated: cleanValues[3] || null,
         };
-      }).filter(album => album.title && album.albumUrl); // Filter out empty rows
+      }).filter(album => album.title); // Filter out empty rows
       
       res.json(albums);
     } catch (error) {
@@ -284,23 +281,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json([
         {
           id: "album-1",
-          title: "Sample Album 1",
-          description: "Nature and landscape photography",
-          albumUrl: "https://photos.google.com/share/AF1QipMvVutl1B8dnJuKw4gXJfwz2e8ISJX2OjkBFhx7K_FESUkbSK-RQNd5kkKkmoD_AQ?key=WGxzaDMxci1md2hQSWROYUV2aHB5eXRybUVrOC1R",
-          thumbnailUrl: "https://photos.google.com/share/AF1QipMvVutl1B8dnJuKw4gXJfwz2e8ISJX2OjkBFhx7K_FESUkbSK-RQNd5kkKkmoD_AQ/photo/AF1QipPbrhOGKIlIRi6_GAgfSE6HR5E3AtFLrPXshTRV?key=WGxzaDMxci1md2hQSWROYUV2aHB5eXRybUVrOC1R",
+          title: "Nature Photography",
+          description: "Beautiful landscapes and wildlife photography",
           category: "Nature",
           dateCreated: "2024-01-15"
         },
         {
           id: "album-2",
-          title: "Sample Album 2",
-          description: "Urban and street photography",
-          albumUrl: "https://photos.google.com/share/AF1QipM-EagMQY27aF7d9NT8XHRwD_5nCoEaK_rxvpFqXIopWBzG8v-jECtsV8ArQotdtw?key=Y2tYVWdwZUdtMGR1UkZPcjl3dlVlbTN1bVE3YjVR",
-          thumbnailUrl: "https://photos.google.com/share/AF1QipM-EagMQY27aF7d9NT8XHRwD_5nCoEaK_rxvpFqXIopWBzG8v-jECtsV8ArQotdtw/photo/AF1QipOa7w83oYQsPjUm9DXV4J-REOC0-U491bgoCsBi?key=Y2tYVWdwZUdtMGR1UkZPcjl3dlVlbTN1bVE3YjVR",
+          title: "Urban Exploration",
+          description: "City streets, architecture and urban life",
           category: "Urban",
           dateCreated: "2024-02-10"
         }
       ]);
+    }
+  });
+
+  // Get photos for a specific album from Google Sheets
+  app.get("/api/photo-albums/:albumId/photos", async (req, res) => {
+    try {
+      const { albumId } = req.params;
+      
+      // Import config to get the spreadsheet URL
+      const config = (await import("../shared/config")).default;
+      
+      // Construct the CSV export URL for Photos sheet
+      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Photos";
+      
+      const response = await fetch(sheetUrl, {
+        headers: {
+          'User-Agent': 'Portfolio-App',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Google Sheets API returned ${response.status}`);
+      }
+      
+      const csvText = await response.text();
+      
+      // Parse CSV data
+      const lines = csvText.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+      
+      const photos = lines.slice(1).map((line, index) => {
+        // Handle CSV parsing with proper quote handling
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && (i === 0 || line[i-1] === ',')) {
+            inQuotes = true;
+          } else if (char === '"' && (i === line.length - 1 || line[i+1] === ',')) {
+            inQuotes = false;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        
+        // Remove quotes from values
+        const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
+        
+        return {
+          id: `photo-${index + 1}`,
+          albumId: cleanValues[0] || '',
+          title: cleanValues[1] || null,
+          description: cleanValues[2] || null,
+          imageUrl: cleanValues[3] || '',
+          thumbnailUrl: cleanValues[4] || cleanValues[3] || '', // Use main image if no thumbnail
+          orderIndex: parseInt(cleanValues[5]) || index,
+        };
+      }).filter(photo => photo.albumId === albumId && photo.imageUrl); // Filter by album and non-empty image URLs
+      
+      res.json(photos);
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+      // Return sample data when Google Sheets is not configured
+      const samplePhotos = {
+        "album-1": [
+          {
+            id: "photo-1",
+            albumId: "album-1",
+            title: "Mountain Sunrise",
+            description: "Beautiful sunrise over the mountains",
+            imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&crop=center",
+            thumbnailUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center",
+            orderIndex: 0
+          },
+          {
+            id: "photo-2",
+            albumId: "album-1",
+            title: "Forest Path",
+            description: "A peaceful walk through the forest",
+            imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&crop=center",
+            thumbnailUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&crop=center",
+            orderIndex: 1
+          },
+          {
+            id: "photo-3",
+            albumId: "album-1",
+            title: "Lake Reflection",
+            description: "Perfect reflection on a calm lake",
+            imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&crop=center",
+            thumbnailUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&crop=center",
+            orderIndex: 2
+          }
+        ],
+        "album-2": [
+          {
+            id: "photo-4",
+            albumId: "album-2",
+            title: "City Lights",
+            description: "Urban nightlife and city lights",
+            imageUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop&crop=center",
+            thumbnailUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center",
+            orderIndex: 0
+          },
+          {
+            id: "photo-5",
+            albumId: "album-2",
+            title: "Street Art",
+            description: "Colorful street art and urban culture",
+            imageUrl: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=800&fit=crop&crop=center",
+            thumbnailUrl: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop&crop=center",
+            orderIndex: 1
+          }
+        ]
+      };
+      
+      res.json(samplePhotos[req.params.albumId as keyof typeof samplePhotos] || []);
     }
   });
 
