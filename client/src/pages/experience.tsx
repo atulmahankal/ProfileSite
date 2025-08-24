@@ -246,11 +246,7 @@ function ExperienceSection() {
                       </div>
                     </div>
                     {experience.toolStack && (
-                      <div className="mt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Code className="h-4 w-4 text-blue-400" />
-                          <span className="text-sm font-medium text-gray-300">Tech Stack:</span>
-                        </div>
+                      <div className="mt-2">
                         <div className="flex flex-wrap gap-2">
                           {experience.toolStack.split(',').map((tool, index) => (
                             <Badge
