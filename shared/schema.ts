@@ -54,6 +54,7 @@ export const experiences = pgTable("experiences", {
   mode: text("mode"),
   designation: text("designation").notNull(),
   workDescriptions: text("work_descriptions"),
+  toolStack: text("tool_stack"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

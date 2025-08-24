@@ -277,6 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mode: cleanValues[4] || '',
           designation: cleanValues[5] || '',
           workDescriptions: cleanValues[6] || '',
+          toolStack: cleanValues[7] || '',
         };
       }).filter(experience => experience.company && experience.designation) // Filter out empty rows
       .sort((a, b) => {

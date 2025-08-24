@@ -3,9 +3,10 @@ import Navigation from "@/components/navigation";
 import Footer from "@/components/footer";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, MapPin, Briefcase, Clock, Building, Search, Filter } from "lucide-react";
+import { CalendarDays, MapPin, Briefcase, Clock, Building, Search, Filter, Code } from "lucide-react";
 import type { Experience } from "@shared/schema";
 
 function calculateDuration(fromDate: string, uptoDate: string | null): string {
@@ -34,11 +35,18 @@ function calculateDuration(fromDate: string, uptoDate: string | null): string {
 function ExperienceSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [modeFilter, setModeFilter] = useState("all");
-  const [companyFilter, setCompanyFilter] = useState("all");
+  const [toolStackFilter, setToolStackFilter] = useState<string[]>([]);
 
   const { data: experiences, isLoading, error } = useQuery<Experience[]>({
     queryKey: ["/api/experiences"],
   });
+
+  // Get all unique tools from all experiences
+  const allTools = Array.from(new Set(
+    experiences
+      ?.flatMap(exp => exp.toolStack?.split(',').map(tool => tool.trim()).filter(Boolean) || []) 
+      || []
+  )).sort();
 
   // Filter experiences based on search and filters
   const filteredExperiences = experiences?.filter(experience => {
@@ -48,14 +56,17 @@ function ExperienceSection() {
       (experience.workDescriptions && experience.workDescriptions.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesMode = modeFilter === "all" || experience.mode === modeFilter;
-    const matchesCompany = companyFilter === "all" || experience.company === companyFilter;
     
-    return matchesSearch && matchesMode && matchesCompany;
+    const matchesToolStack = toolStackFilter.length === 0 || 
+      toolStackFilter.some(tool => 
+        experience.toolStack?.toLowerCase().includes(tool.toLowerCase())
+      );
+    
+    return matchesSearch && matchesMode && matchesToolStack;
   }) || [];
 
   // Get unique values for filters
   const uniqueModes = Array.from(new Set(experiences?.map(exp => exp.mode).filter(Boolean) || []));
-  const uniqueCompanies = Array.from(new Set(experiences?.map(exp => exp.company) || []));
 
   if (isLoading) {
     return (
@@ -117,7 +128,7 @@ function ExperienceSection() {
               <Filter className="h-5 w-5 text-blue-400" />
               <h3 className="text-lg font-semibold text-white">Filter Experience</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -135,23 +146,56 @@ function ExperienceSection() {
                 <SelectContent>
                   <SelectItem value="all">All Work Modes</SelectItem>
                   {uniqueModes.map(mode => (
-                    <SelectItem key={mode} value={mode}>{mode}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white" data-testid="company-filter">
-                  <SelectValue placeholder="Filter by company" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Companies</SelectItem>
-                  {uniqueCompanies.map(company => (
-                    <SelectItem key={company} value={company}>{company}</SelectItem>
+                    <SelectItem key={mode} value={mode || ""}>{mode}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {(searchTerm || modeFilter !== "all" || companyFilter !== "all") && (
+            
+            {allTools.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Code className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm font-medium text-white">Filter by Tools & Technologies:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allTools.map(tool => (
+                    <Badge
+                      key={tool}
+                      variant={toolStackFilter.includes(tool) ? "default" : "secondary"}
+                      className={`cursor-pointer transition-all ${
+                        toolStackFilter.includes(tool)
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                      }`}
+                      onClick={() => {
+                        setToolStackFilter(prev => 
+                          prev.includes(tool) 
+                            ? prev.filter(t => t !== tool)
+                            : [...prev, tool]
+                        );
+                      }}
+                      data-testid={`tool-filter-${tool}`}
+                    >
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+                {toolStackFilter.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setToolStackFilter([])}
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                      data-testid="clear-tool-filters"
+                    >
+                      Clear tool filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {(searchTerm || modeFilter !== "all" || toolStackFilter.length > 0) && (
               <div className="mt-4 text-sm text-gray-400">
                 Showing {filteredExperiences.length} of {experiences.length} experiences
               </div>
@@ -201,6 +245,26 @@ function ExperienceSection() {
                         )}
                       </div>
                     </div>
+                    {experience.toolStack && (
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Code className="h-4 w-4 text-blue-400" />
+                          <span className="text-sm font-medium text-gray-300">Tech Stack:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {experience.toolStack.split(',').map((tool, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
+                              data-testid={`tool-tag-${experience.id}-${index}`}
+                            >
+                              {tool.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 {experience.workDescriptions && (
