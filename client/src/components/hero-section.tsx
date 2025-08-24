@@ -50,7 +50,7 @@ export default function HeroSection() {
   return (
     <section 
       id="home" 
-      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-24"
+      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-24 pb-16"
       data-testid="hero-section"
     >
       {/* Animated background elements */}
