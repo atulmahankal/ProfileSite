@@ -49,7 +49,7 @@ export default function Projects() {
   return (
     <div className="min-h-screen bg-portfolio-background text-foreground">
       <Navigation />
-      <div className="container mx-auto px-4 py-12 pt-28">
+      <div className="container mx-auto px-4 py-12 pt-32">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="projects-title">
