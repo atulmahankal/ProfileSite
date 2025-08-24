@@ -9,6 +9,7 @@ import Skills from "@/pages/skills";
 import GitHub from "@/pages/github";
 import Contact from "@/pages/contact";
 import Projects from "@/pages/projects";
+import Photography from "@/pages/photography";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/github" component={GitHub} />
       <Route path="/contact" component={Contact} />
       <Route path="/projects" component={Projects} />
+      <Route path="/photography" component={Photography} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Portfolio, type InsertPortfolio, type SocialLink, type InsertSocialLink, type Skill, type InsertSkill, type Project, type InsertProject } from "@shared/schema";
+import { type User, type InsertUser, type Portfolio, type InsertPortfolio, type SocialLink, type InsertSocialLink, type Skill, type InsertSkill, type Project, type InsertProject, type PhotoAlbum, type InsertPhotoAlbum } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -18,6 +18,9 @@ export interface IStorage {
   
   getProjects(): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
+  
+  getPhotoAlbums(): Promise<PhotoAlbum[]>;
+  createPhotoAlbum(album: InsertPhotoAlbum): Promise<PhotoAlbum>;
 }
 
 export class MemStorage implements IStorage {
@@ -26,12 +29,14 @@ export class MemStorage implements IStorage {
   private socialLinks: Map<string, SocialLink>;
   private skills: Map<string, Skill>;
   private projects: Map<string, Project>;
+  private photoAlbums: Map<string, PhotoAlbum>;
 
   constructor() {
     this.users = new Map();
     this.socialLinks = new Map();
     this.skills = new Map();
     this.projects = new Map();
+    this.photoAlbums = new Map();
     
     // Initialize with Atul's portfolio data
     this.initializePortfolio();
@@ -152,6 +157,23 @@ export class MemStorage implements IStorage {
     const project: Project = { ...insertProject, id, link: insertProject.link || null };
     this.projects.set(id, project);
     return project;
+  }
+
+  async getPhotoAlbums(): Promise<PhotoAlbum[]> {
+    return Array.from(this.photoAlbums.values());
+  }
+
+  async createPhotoAlbum(insertAlbum: InsertPhotoAlbum): Promise<PhotoAlbum> {
+    const id = randomUUID();
+    const album: PhotoAlbum = { 
+      ...insertAlbum, 
+      id, 
+      description: insertAlbum.description || null,
+      dateCreated: insertAlbum.dateCreated || null,
+      category: insertAlbum.category || "General"
+    };
+    this.photoAlbums.set(id, album);
+    return album;
   }
 }
 

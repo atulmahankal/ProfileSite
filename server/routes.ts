@@ -216,6 +216,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get photo albums from Google Sheets
+  app.get("/api/photo-albums", async (req, res) => {
+    try {
+      // Import config to get the spreadsheet URL
+      const config = (await import("../shared/config")).default;
+      
+      // Construct the CSV export URL for Photography sheet
+      // For now using a placeholder - user needs to replace with their actual spreadsheet ID
+      const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Photography";
+      
+      const response = await fetch(sheetUrl, {
+        headers: {
+          'User-Agent': 'Portfolio-App',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Google Sheets API returned ${response.status}`);
+      }
+      
+      const csvText = await response.text();
+      
+      // Parse CSV data
+      const lines = csvText.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+      
+      const albums = lines.slice(1).map((line, index) => {
+        // Handle CSV parsing with proper quote handling
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && (i === 0 || line[i-1] === ',')) {
+            inQuotes = true;
+          } else if (char === '"' && (i === line.length - 1 || line[i+1] === ',')) {
+            inQuotes = false;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        
+        // Remove quotes from values
+        const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
+        
+        return {
+          id: `album-${index + 1}`,
+          title: cleanValues[0] || '',
+          description: cleanValues[1] || null,
+          albumUrl: cleanValues[2] || '',
+          thumbnailUrl: cleanValues[3] || '',
+          category: cleanValues[4] || 'General',
+          dateCreated: cleanValues[5] || null,
+        };
+      }).filter(album => album.title && album.albumUrl); // Filter out empty rows
+      
+      res.json(albums);
+    } catch (error) {
+      console.error('Error fetching photo albums:', error);
+      // Return sample data when Google Sheets is not configured
+      res.json([
+        {
+          id: "album-1",
+          title: "Sample Album 1",
+          description: "Nature and landscape photography",
+          albumUrl: "https://photos.google.com/share/AF1QipMvVutl1B8dnJuKw4gXJfwz2e8ISJX2OjkBFhx7K_FESUkbSK-RQNd5kkKkmoD_AQ?key=WGxzaDMxci1md2hQSWROYUV2aHB5eXRybUVrOC1R",
+          thumbnailUrl: "https://photos.google.com/share/AF1QipMvVutl1B8dnJuKw4gXJfwz2e8ISJX2OjkBFhx7K_FESUkbSK-RQNd5kkKkmoD_AQ/photo/AF1QipPbrhOGKIlIRi6_GAgfSE6HR5E3AtFLrPXshTRV?key=WGxzaDMxci1md2hQSWROYUV2aHB5eXRybUVrOC1R",
+          category: "Nature",
+          dateCreated: "2024-01-15"
+        },
+        {
+          id: "album-2",
+          title: "Sample Album 2",
+          description: "Urban and street photography",
+          albumUrl: "https://photos.google.com/share/AF1QipM-EagMQY27aF7d9NT8XHRwD_5nCoEaK_rxvpFqXIopWBzG8v-jECtsV8ArQotdtw?key=Y2tYVWdwZUdtMGR1UkZPcjl3dlVlbTN1bVE3YjVR",
+          thumbnailUrl: "https://photos.google.com/share/AF1QipM-EagMQY27aF7d9NT8XHRwD_5nCoEaK_rxvpFqXIopWBzG8v-jECtsV8ArQotdtw/photo/AF1QipOa7w83oYQsPjUm9DXV4J-REOC0-U491bgoCsBi?key=Y2tYVWdwZUdtMGR1UkZPcjl3dlVlbTN1bVE3YjVR",
+          category: "Urban",
+          dateCreated: "2024-02-10"
+        }
+      ]);
+    }
+  });
+
   // Contact form endpoint
   app.post("/api/contact", async (req, res) => {
     try {

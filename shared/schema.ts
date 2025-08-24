@@ -45,6 +45,16 @@ export const projects = pgTable("projects", {
   longDescription: text("long_description").notNull(),
 });
 
+export const photoAlbums = pgTable("photo_albums", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  albumUrl: text("album_url").notNull(),
+  thumbnailUrl: text("thumbnail_url").notNull(),
+  category: text("category").default("General"),
+  dateCreated: text("date_created"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -67,6 +77,10 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
 });
 
+export const insertPhotoAlbumSchema = createInsertSchema(photoAlbums).omit({
+  id: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Portfolio = typeof portfolio.$inferSelect;
@@ -77,3 +91,5 @@ export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = z.infer<typeof insertSkillSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type PhotoAlbum = typeof photoAlbums.$inferSelect;
+export type InsertPhotoAlbum = z.infer<typeof insertPhotoAlbumSchema>;

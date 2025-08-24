@@ -15,6 +15,7 @@ export default function Navigation() {
     { href: "/github", label: "GitHub" },
     { href: "/contact", label: "Contact" },
     { href: "/projects", label: "Projects" },
+    { href: "/photography", label: "Photography" },
   ];
 
   const handleNavClick = () => {
