@@ -9,48 +9,15 @@ export default function Navigation() {
   const [location, setLocation] = useLocation();
   
   const navLinks = [
-    { href: "/", label: "Home", type: "route" },
-    { href: "/projects", label: "Projects", type: "route" },
-    { href: "#about", label: "About", type: "scroll" },
-    { href: "#skills", label: "Skills", type: "scroll" },
-    { href: "#stats", label: "GitHub", type: "scroll" },
-    { href: "#contact", label: "Contact", type: "scroll" },
+    { href: "/", label: "Home" },
+    { href: "/about", label: "About" },
+    { href: "/skills", label: "Skills" },
+    { href: "/github", label: "GitHub" },
+    { href: "/contact", label: "Contact" },
+    { href: "/projects", label: "Projects" },
   ];
 
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      const navHeight = 80; // Account for navbar height
-      const elementPosition = element.offsetTop - navHeight;
-      window.scrollTo({
-        top: elementPosition,
-        behavior: "smooth"
-      });
-    }
-    setIsMenuOpen(false);
-  };
-  
-  const handleNavClick = (link: { href: string; type: string }) => {
-    if (link.type === "scroll") {
-      if (location !== "/") {
-        // If not on home page, navigate to home first then scroll
-        setLocation("/");
-        // Use setTimeout to allow navigation to complete before scrolling
-        setTimeout(() => {
-          const element = document.querySelector(link.href);
-          if (element) {
-            const navHeight = 80; // Account for navbar height
-            const elementPosition = element.offsetTop - navHeight;
-            window.scrollTo({
-              top: elementPosition,
-              behavior: "smooth"
-            });
-          }
-        }, 100);
-      } else {
-        scrollToSection(link.href);
-      }
-    }
+  const handleNavClick = () => {
     setIsMenuOpen(false);
   };
 
@@ -68,29 +35,19 @@ export default function Navigation() {
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
               {navLinks.map((link) => (
-                link.type === "route" ? (
-                  <Link key={link.href} href={link.href}>
-                    <button
-                      className={`transition-colors duration-300 px-3 py-2 ${
-                        location === link.href 
-                          ? 'text-portfolio-accent' 
-                          : 'text-slate-300 hover:text-portfolio-accent'
-                      }`}
-                      data-testid={`nav-link-${link.label.toLowerCase()}`}
-                    >
-                      {link.label}
-                    </button>
-                  </Link>
-                ) : (
+                <Link key={link.href} href={link.href}>
                   <button
-                    key={link.href}
-                    onClick={() => handleNavClick(link)}
-                    className="text-slate-300 hover:text-portfolio-accent transition-colors duration-300 px-3 py-2"
+                    onClick={handleNavClick}
+                    className={`transition-colors duration-300 px-3 py-2 ${
+                      location === link.href 
+                        ? 'text-portfolio-accent' 
+                        : 'text-slate-300 hover:text-portfolio-accent'
+                    }`}
                     data-testid={`nav-link-${link.label.toLowerCase()}`}
                   >
                     {link.label}
                   </button>
-                )
+                </Link>
               ))}
             </div>
           </div>
@@ -114,30 +71,19 @@ export default function Navigation() {
           <div className="md:hidden" data-testid="mobile-menu">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-portfolio-primary/90 backdrop-blur-lg rounded-lg mt-2">
               {navLinks.map((link) => (
-                link.type === "route" ? (
-                  <Link key={link.href} href={link.href}>
-                    <button
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`block px-3 py-2 text-base font-medium w-full text-left transition-colors duration-300 ${
-                        location === link.href 
-                          ? 'text-portfolio-accent' 
-                          : 'text-slate-300 hover:text-portfolio-accent'
-                      }`}
-                      data-testid={`mobile-nav-link-${link.label.toLowerCase()}`}
-                    >
-                      {link.label}
-                    </button>
-                  </Link>
-                ) : (
+                <Link key={link.href} href={link.href}>
                   <button
-                    key={link.href}
-                    onClick={() => handleNavClick(link)}
-                    className="text-slate-300 hover:text-portfolio-accent block px-3 py-2 text-base font-medium w-full text-left transition-colors duration-300"
+                    onClick={handleNavClick}
+                    className={`block px-3 py-2 text-base font-medium w-full text-left transition-colors duration-300 ${
+                      location === link.href 
+                        ? 'text-portfolio-accent' 
+                        : 'text-slate-300 hover:text-portfolio-accent'
+                    }`}
                     data-testid={`mobile-nav-link-${link.label.toLowerCase()}`}
                   >
                     {link.label}
                   </button>
-                )
+                </Link>
               ))}
             </div>
           </div>

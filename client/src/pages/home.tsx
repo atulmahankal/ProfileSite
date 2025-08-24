@@ -61,10 +61,6 @@ export default function Home() {
       <Navigation />
       <main>
         <HeroSection />
-        <AboutSection />
-        <SkillsSection />
-        <GitHubStatsSection />
-        <ContactSection />
       </main>
       <Footer />
     </div>
