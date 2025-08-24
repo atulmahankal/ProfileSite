@@ -11,7 +11,7 @@ export const config = {
     
     // Sheet names for different pages
     sheets: {
-      photography: "Photography",
+      experience: "Experience",
       // Add more sheets here as needed for other pages
       // portfolio: "Portfolio",
       // testimonials: "Testimonials"

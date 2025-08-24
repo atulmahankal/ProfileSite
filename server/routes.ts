@@ -216,14 +216,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get photo albums from Google Sheets
-  app.get("/api/photo-albums", async (req, res) => {
+  // Get experiences from Google Sheets
+  app.get("/api/experiences", async (req, res) => {
     try {
       // Import config to get the spreadsheet URL
       const config = (await import("../shared/config")).default;
       
-      // Construct the CSV export URL for Photography sheet
-      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.photography}`;
+      // Construct the CSV export URL for Experience sheet
+      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.experience}`;
       
       const response = await fetch(sheetUrl, {
         headers: {
@@ -241,10 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = csvText.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
       
-      // Group photos by title to create albums
-      const photosByTitle = new Map();
-      
-      lines.slice(1).forEach((line, index) => {
+      const experiences = lines.slice(1).map((line, index) => {
         // Handle CSV parsing with proper quote handling
         const values = [];
         let current = '';
@@ -268,175 +265,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Remove quotes from values
         const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
         
-        const title = cleanValues[0] || '';
-        const description = cleanValues[1] || '';
-        const gphotosKey = cleanValues[2] || '';
-        
-        if (title && gphotosKey) {
-          if (!photosByTitle.has(title)) {
-            photosByTitle.set(title, {
-              title,
-              description,
-              photos: []
-            });
-          }
-          
-          // Convert Google Photos key to viewable URL
-          const imageUrl = gphotosKey.includes('http') ? gphotosKey : `https://lh3.googleusercontent.com/${gphotosKey}`;
-          
-          photosByTitle.get(title).photos.push({
-            id: `photo-${index + 1}`,
-            title: title,
-            description: description,
-            imageUrl: imageUrl,
-            thumbnailUrl: imageUrl,
-            orderIndex: photosByTitle.get(title).photos.length
-          });
-        }
-      });
+        return {
+          id: `experience-${index + 1}`,
+          fromDate: cleanValues[0] || '',
+          uptoDate: cleanValues[1] || null,
+          company: cleanValues[2] || '',
+          location: cleanValues[3] || '',
+          mode: cleanValues[4] || '',
+          designation: cleanValues[5] || '',
+          workDescriptions: cleanValues[6] || '',
+        };
+      }).filter(experience => experience.company && experience.designation); // Filter out empty rows
       
-      // Convert to albums array
-      const albums = Array.from(photosByTitle.entries()).map(([title, data], index) => ({
-        id: `album-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-        title: data.title,
-        description: data.description,
-        category: 'Photography',
-        dateCreated: new Date().toISOString().split('T')[0],
-        photoCount: data.photos.length
-      }));
-      
-      res.json(albums);
+      res.json(experiences);
     } catch (error) {
-      console.error('Error fetching photo albums:', error);
+      console.error('Error fetching experiences:', error);
       // Return sample data when Google Sheets is not configured
       res.json([
         {
-          id: "album-cloudy-mountains",
-          title: "Cloudy Mountains",
-          description: "Mountains covered with Clouds",
-          category: "Photography",
-          dateCreated: "2024-01-15",
-          photoCount: 3
+          id: "experience-1",
+          fromDate: "2023-01",
+          uptoDate: "Present",
+          company: "Tech Solutions Inc.",
+          location: "Mumbai, India",
+          mode: "Remote",
+          designation: "Senior Full Stack Developer",
+          workDescriptions: "Led development of scalable web applications using React, Node.js, and PostgreSQL. Mentored junior developers and implemented CI/CD pipelines."
         },
         {
-          id: "album-evening-sky",
-          title: "Evening Sky",
-          description: "Beautiful evening sky photography",
-          category: "Photography",
-          dateCreated: "2024-02-10",
-          photoCount: 2
+          id: "experience-2",
+          fromDate: "2021-06",
+          uptoDate: "2022-12",
+          company: "Digital Innovations Ltd.",
+          location: "Pune, India",
+          mode: "Hybrid",
+          designation: "Full Stack Developer",
+          workDescriptions: "Developed and maintained e-commerce platforms using modern JavaScript frameworks. Collaborated with cross-functional teams to deliver high-quality solutions."
         }
       ]);
-    }
-  });
-
-  // Get photos for a specific album from Google Sheets
-  app.get("/api/photo-albums/:albumId/photos", async (req, res) => {
-    try {
-      const { albumId } = req.params;
-      
-      // Import config to get the spreadsheet URL
-      const config = (await import("../shared/config")).default;
-      
-      // Construct the CSV export URL for Photography sheet
-      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.photography}`;
-      
-      const response = await fetch(sheetUrl, {
-        headers: {
-          'User-Agent': 'Portfolio-App',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Google Sheets API returned ${response.status}`);
-      }
-      
-      const csvText = await response.text();
-      
-      // Parse CSV data
-      const lines = csvText.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      
-      // Extract album title from albumId (remove 'album-' prefix and convert dashes back to spaces)
-      const albumTitle = albumId.replace('album-', '').replace(/-/g, ' ');
-      
-      const photos: any[] = [];
-      
-      lines.slice(1).forEach((line, index) => {
-        // Handle CSV parsing with proper quote handling
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"' && (i === 0 || line[i-1] === ',')) {
-            inQuotes = true;
-          } else if (char === '"' && (i === line.length - 1 || line[i+1] === ',')) {
-            inQuotes = false;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim());
-        
-        // Remove quotes from values
-        const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
-        
-        const title = cleanValues[0] || '';
-        const description = cleanValues[1] || '';
-        const gphotosKey = cleanValues[2] || '';
-        
-        // Check if this photo belongs to the requested album
-        if (title.toLowerCase() === albumTitle.toLowerCase() && gphotosKey) {
-          // Convert Google Photos key to viewable URL
-          const imageUrl = gphotosKey.includes('http') ? gphotosKey : `https://lh3.googleusercontent.com/${gphotosKey}`;
-          
-          photos.push({
-            id: `photo-${index + 1}`,
-            albumId: albumId,
-            title: title,
-            description: description,
-            imageUrl: imageUrl,
-            thumbnailUrl: imageUrl,
-            orderIndex: photos.length
-          });
-        }
-      });
-      
-      res.json(photos);
-    } catch (error) {
-      console.error('Error fetching photos:', error);
-      // Return sample data when Google Sheets is not configured
-      const samplePhotos = {
-        "album-cloudy-mountains": [
-          {
-            id: "photo-1",
-            albumId: "album-cloudy-mountains",
-            title: "Cloudy Mountains",
-            description: "Mountains covered with Clouds",
-            imageUrl: "https://lh3.googleusercontent.com/AP1GczNXeBKelJbNLjcu77tlBUgAejFpNOcVzWv4GcK_ze-gK9-W0SimL5pW06q9LO0lVgBzMxufPr_XtSmyNnLjV07ioVNhxnDA_D0fLAKmMowuSiYKlTSE8SWF2q4Q3k6MHGAfIZf70yt0k8DLW4zOkw3MRA=w1366-h600-s-no-gm",
-            thumbnailUrl: "https://lh3.googleusercontent.com/AP1GczNXeBKelJbNLjcu77tlBUgAejFpNOcVzWv4GcK_ze-gK9-W0SimL5pW06q9LO0lVgBzMxufPr_XtSmyNnLjV07ioVNhxnDA_D0fLAKmMowuSiYKlTSE8SWF2q4Q3k6MHGAfIZf70yt0k8DLW4zOkw3MRA=w400-h300-s-no-gm",
-            orderIndex: 0
-          }
-        ],
-        "album-evening-sky": [
-          {
-            id: "photo-2",
-            albumId: "album-evening-sky",
-            title: "Evening Sky",
-            description: "Beautiful evening sky",
-            imageUrl: "https://lh3.googleusercontent.com/AP1GczO8Gpo9Q-DxPxLRx3atB1WSdGPU3F_tB3JJZvxdXVvSNe7kPOlGjhL3s6W_GsqsZNmzGtPMMpy4CvZ0ZchgnvqqlWTcNFoooxvOOzlcjezYbUDiYkFEL6Bb8n6gc0R8r3UwRSlsScI3fQYP19geMtnCcw=w1366-h600-s-no-gm",
-            thumbnailUrl: "https://lh3.googleusercontent.com/AP1GczO8Gpo9Q-DxPxLRx3atB1WSdGPU3F_tB3JJZvxdXVvSNe7kPOlGjhL3s6W_GsqsZNmzGtPMMpy4CvZ0ZchgnvqqlWTcNFoooxvOOzlcjezYbUDiYkFEL6Bb8n6gc0R8r3UwRSlsScI3fQYP19geMtnCcw=w400-h300-s-no-gm",
-            orderIndex: 0
-          }
-        ]
-      };
-      
-      res.json(samplePhotos[req.params.albumId as keyof typeof samplePhotos] || []);
     }
   });
 

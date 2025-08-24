@@ -45,22 +45,15 @@ export const projects = pgTable("projects", {
   longDescription: text("long_description").notNull(),
 });
 
-export const photoAlbums = pgTable("photo_albums", {
+export const experiences = pgTable("experiences", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description"),
-  category: text("category").default("General"),
-  dateCreated: text("date_created"),
-});
-
-export const photos = pgTable("photos", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  albumId: varchar("album_id").references(() => photoAlbums.id).notNull(),
-  title: text("title"),
-  description: text("description"),
-  imageUrl: text("image_url").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
-  orderIndex: integer("order_index").default(0),
+  fromDate: text("from_date").notNull(),
+  uptoDate: text("upto_date"),
+  company: text("company").notNull(),
+  location: text("location"),
+  mode: text("mode"),
+  designation: text("designation").notNull(),
+  workDescriptions: text("work_descriptions"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -85,11 +78,7 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
 });
 
-export const insertPhotoAlbumSchema = createInsertSchema(photoAlbums).omit({
-  id: true,
-});
-
-export const insertPhotoSchema = createInsertSchema(photos).omit({
+export const insertExperienceSchema = createInsertSchema(experiences).omit({
   id: true,
 });
 
@@ -103,7 +92,5 @@ export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = z.infer<typeof insertSkillSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type PhotoAlbum = typeof photoAlbums.$inferSelect;
-export type InsertPhotoAlbum = z.infer<typeof insertPhotoAlbumSchema>;
-export type Photo = typeof photos.$inferSelect;
-export type InsertPhoto = z.infer<typeof insertPhotoSchema>;
+export type Experience = typeof experiences.$inferSelect;
+export type InsertExperience = z.infer<typeof insertExperienceSchema>;
