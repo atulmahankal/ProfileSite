@@ -331,7 +331,11 @@ function ExperienceSection() {
                 <strong className="text-blue-400">Designation</strong>
                 <p className="text-gray-400">Job title or position</p>
               </div>
-              <div className="md:col-span-2">
+              <div>
+                <strong className="text-blue-400">Tech Stack</strong>
+                <p className="text-gray-400">Comma-separated technologies used (e.g., React, Node.js, PostgreSQL)</p>
+              </div>
+              <div>
                 <strong className="text-blue-400">WorkDescriptions</strong>
                 <p className="text-gray-400">Detailed description of responsibilities and achievements</p>
               </div>
