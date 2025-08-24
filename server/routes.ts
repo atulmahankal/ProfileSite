@@ -124,8 +124,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get projects from Google Sheets
   app.get("/api/projects", async (req, res) => {
     try {
-      // Google Sheets CSV export URL
-      const sheetUrl = "https://docs.google.com/spreadsheets/d/1_5zB-pQEToAwk7BwBeAqWEd4WlUeAMjbcXrzGj3WCz4/gviz/tq?tqx=out:csv&sheet=Projects";
+      // Import config to get the spreadsheet URL
+      const config = (await import("../shared/config")).default;
+      
+      // Construct the CSV export URL for Projects sheet
+      const sheetUrl = `${config.googleSheets.baseUrl}/gviz/tq?tqx=out:csv&sheet=${config.googleSheets.sheets.projects}`;
       
       const response = await fetch(sheetUrl, {
         headers: {
