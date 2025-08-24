@@ -275,7 +275,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           designation: cleanValues[5] || '',
           workDescriptions: cleanValues[6] || '',
         };
-      }).filter(experience => experience.company && experience.designation); // Filter out empty rows
+      }).filter(experience => experience.company && experience.designation) // Filter out empty rows
+      .sort((a, b) => {
+        // Sort by From date descending (newest first)
+        const fromA = new Date(a.fromDate + '-01').getTime();
+        const fromB = new Date(b.fromDate + '-01').getTime();
+        
+        if (fromA !== fromB) {
+          return fromB - fromA; // Descending order
+        }
+        
+        // If From dates are equal, sort by Upto date descending
+        // Treat empty/null uptoDate as "Present" (current date)
+        const uptoA = a.uptoDate && a.uptoDate.toLowerCase() !== 'present' 
+          ? new Date(a.uptoDate + '-01').getTime() 
+          : Date.now();
+        const uptoB = b.uptoDate && b.uptoDate.toLowerCase() !== 'present' 
+          ? new Date(b.uptoDate + '-01').getTime() 
+          : Date.now();
+        
+        return uptoB - uptoA; // Descending order
+      });
       
       res.json(experiences);
     } catch (error) {
