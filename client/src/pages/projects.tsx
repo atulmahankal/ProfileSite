@@ -41,8 +41,67 @@ export default function Projects() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-portfolio-background">
-        <div className="animate-pulse text-portfolio-accent">Loading projects...</div>
+      <div className="min-h-screen bg-portfolio-background text-foreground">
+        <Navigation />
+        <div className="container mx-auto px-4 py-12 pt-32">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              My <span className="text-portfolio-accent">Projects</span>
+            </h1>
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+              Explore my portfolio of web applications, mobile apps, and software solutions
+            </p>
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="flex flex-col md:flex-row gap-4 mb-8 bg-portfolio-primary/30 p-6 rounded-lg border border-portfolio-accent/20 animate-pulse">
+            <div className="flex-1 relative">
+              <div className="h-10 bg-gray-700 rounded"></div>
+            </div>
+            <div className="w-full md:w-[200px]">
+              <div className="h-10 bg-gray-700 rounded"></div>
+            </div>
+          </div>
+
+          {/* Projects Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="bg-portfolio-primary/30 border-portfolio-accent/20 animate-pulse">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {/* Project title skeleton */}
+                      <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
+                      {/* Company name skeleton */}
+                      <div className="h-4 bg-gray-700 rounded w-1/2 mb-2"></div>
+                    </div>
+                    {/* External link icon skeleton */}
+                    <div className="w-5 h-5 bg-gray-700 rounded"></div>
+                  </div>
+                  {/* Description skeleton */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-700 rounded w-full"></div>
+                    <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+                    <div className="h-4 bg-gray-700 rounded w-4/6"></div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* Tools label skeleton */}
+                  <div className="h-4 bg-gray-700 rounded w-1/3 mb-3"></div>
+                  {/* Tool badges skeleton */}
+                  <div className="flex flex-wrap gap-2">
+                    {[...Array(4)].map((_, j) => (
+                      <div key={j} className="h-6 bg-gray-700 rounded w-16"></div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
